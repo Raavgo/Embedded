@@ -1,0 +1,29 @@
+libary IEEE;
+use IEE.std_logic_1164.all;
+use IEE.std.numeric_std.all
+
+entity adder is
+	port(
+		data_i0 : in std_logic_vector(7 downto 0);
+		data_i1 : in std_logic_vector(7 downto 0);
+		data_o : out std_logic_vector (8 downto 0);
+	);
+end adder
+
+architecture rtl of adder is
+	signal input0 : natural range 0 to 255;
+	signal input1 : natural range 0 to 255;
+	signal outPut: natural range 0 to 510;
+	
+beginn
+	input0 <= to_integer(unsigned(data_i0));
+	input1 <= to_integer(unsigned(data_i1));
+	outPut <= 0;
+
+	process(input0 , input1)
+	begin
+		outPut = input0 + input1;
+		data_o <=To_StdLogicVector(To_bitvector (outPut));
+	end process;
+
+end rtl;
