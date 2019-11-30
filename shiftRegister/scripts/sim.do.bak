@@ -1,0 +1,4 @@
+vsim -t ns -lib tb/adder_tb
+view *
+do wave.do
+run 100 ms
