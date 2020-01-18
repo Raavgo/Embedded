@@ -1,0 +1,112 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.std_logic_unsigned.all;
+entity cntr is
+    Port ( 
+	clk_i : in STD_LOGIC;-- 100Mhz clock on Basys 3 FPGA board
+        reset_i : in STD_LOGIC; -- reset
+   
+	cntrup_i : in STD_LOGIC;
+	cntrdown_i: in STD_LOGIC;
+	cntrreset_i: in STD_LOGIC;
+	cntrhold_i: in STD_LOGIC;
+		   
+	cntr0_o : out STD_LOGIC_VECTOR(7 downto 0);
+	cntr1_o : out STD_LOGIC_VECTOR(7 downto 0);
+	cntr2_o : out STD_LOGIC_VECTOR(7 downto 0);
+	cntr3_o : out STD_LOGIC_VECTOR(7 downto 0)
+	);
+end cntr;
+
+architecture Behavioral of cntr is
+
+signal count_periode: integer:=1;
+signal count_clk : std_logic := '0';
+signal cntVal : STD_LOGIC_VECTOR(15 downto 0):="0000000000000000";
+
+ -----------------------------------------------------------------------------
+ --
+ -- Convert Binary Cnt Value to 7 Segment Pattern
+ --
+ -----------------------------------------------------------------------------
+
+function getLedPattern(
+	cnt_i : STD_LOGIC_VECTOR(3 downto 0)) 
+	return STD_LOGIC_VECTOR  is 
+	variable result: STD_LOGIC_VECTOR(7 downto 0):="00000000";
+begin
+    case cnt_i is
+    when "0000" => return "00000011"; -- "0"     
+    when "0001" => return "10011111"; -- "1" 
+    when "0010" => return "00100101"; -- "2" 
+    when "0011" => return "00001101"; -- "3" 
+    when "0100" => return "10011001"; -- "4" 
+    when "0101" => return "01001001"; -- "5" 
+    when "0110" => return "01000001"; -- "6" 
+    when "0111" => return "00011111"; -- "7" 
+    when "1000" => return "00000001"; -- "8"     
+    when "1001" => return "00001001"; -- "9" 
+    when "1010" => return "00000101"; -- a
+    when "1011" => return "11000001"; -- b
+    when "1100" => return "01100011"; -- C
+    when "1101" => return "10000101"; -- d
+    when "1110" => return "01100001"; -- E
+    when "1111" => return "01110001"; -- F
+    when others => return "11111111";
+    end case;
+end getLedPattern;
+
+begin
+ -----------------------------------------------------------------------------
+ --
+ -- Generate 10Hz signal
+ --
+ -----------------------------------------------------------------------------
+countHz : process (clk_i,reset_i) --10Hz ,0.1s
+begin 
+    if(reset_i='1') then
+        count_periode<=1;
+	count_clk<='0';
+    elsif(rising_edge(clk_i)) then
+        count_periode <=count_periode+1;
+	if (count_periode >= 5000000) then
+		count_clk <= NOT count_clk;
+		count_periode <= 1;
+	end if;
+    end if;
+end process countHz;
+
+ -----------------------------------------------------------------------------
+ --
+ --  Add or Subtract 1 to the binary counting register every 0.1s
+ --
+ -----------------------------------------------------------------------------
+
+count: process(reset_i,count_clk)
+begin
+        if(reset_i='1') then
+            cntVal <= "0000000000000000";
+        elsif(rising_edge(count_clk)) then
+		if(cntrup_i ='1') then
+			cntVal <= cntVal + "0000000000000001";
+		elsif(cntrdown_i ='1') then	
+			cntVal <= cntVal - "0000000000000001";
+		elsif(cntrhold_i = '1') then
+			cntVal <= cntVal;
+		elsif (cntrreset_i = '1') then
+			cntVal <= "0000000000000000";
+		end if;
+        end if;
+end process;
+
+ -----------------------------------------------------------------------------
+ --
+ --  Map the LED Pattern on the 4 Output vectors
+ --
+ -----------------------------------------------------------------------------
+
+cntr0_o <= getLedPattern(cntVal(3 downto 0));
+cntr1_o <= getLedPattern(cntVal(7 downto 4));
+cntr2_o <= getLedPattern(cntVal(11 downto 8));
+cntr3_o <= getLedPattern(cntVal(15 downto 12));
+end Behavioral;

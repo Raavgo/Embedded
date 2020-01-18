@@ -1,0 +1,60 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.std_logic_unsigned.all;
+entity cntr is
+    Port ( clk_i : in STD_LOGIC;-- 100Mhz clock on Basys 3 FPGA board
+           reset_i : in STD_LOGIC; -- reset
+   
+		   cntrup_i : in STD_LOGIC;
+		   cntrdown_i: in STD_LOGIC;
+		   cntrreset_i: in STD_LOGIC;
+		   cntrhold_i: in STD_LOGIC;
+		   
+		   cntr0_o : out STD_LOGIC_VECTOR(6 downto 0);
+		   cntr1_o : out STD_LOGIC_VECTOR(6 downto 0);
+		   cntr2_o : out STD_LOGIC_VECTOR(6 downto 0);
+		   cntr3_o : out STD_LOGIC_VECTOR(6 downto 0)
+		   );
+end cntr;
+
+architecture Behavioral of cntr is
+
+signal count_periode: integer:=1;
+signal count_clk : std_logic := '0';
+signal cntVal : STD_LOGIC_VECTOR(15 downto 0);
+
+begin
+
+countHz : process (clk_i,reset_i) --10Hz
+begin 
+    if(reset_i='1') then
+        count_periode<=1;
+	count_clk<='0';
+    elsif(rising_edge(clk_i)) then
+        count_periode <=count_periode+1;
+	if (count_periode = 10000000) then
+		count_clk <= NOT count_clk;
+		count_periode <= 1;
+	end if;
+    end if;
+end process countHz;
+
+
+process(reset_i)
+begin
+        if(reset_i='1') then
+            cntVal <= "0000000000000000";
+        elsif(rising_edge(count_clk)) then
+			if(cntrup_i ='1') then
+				cntVal <= cntVal + x"0001";
+			elsif(cntrdown_i ='1') then	
+				cntVal <= cntVal - x"0001";
+			elsif(cntrhold_i = '1') then
+			    cntVal <= cntVal;
+		    elsif (cntrreset_i = '1') then
+				cntVal <= "0000000000000000";
+			end if;
+        end if;
+end process;
+
+end Behavioral;
